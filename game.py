@@ -10,6 +10,12 @@ class Game:
         self.height = None
         self.width = None
         self.score = 0
+        self.steps = [
+            self.move_up,
+            self.move_right,
+            self.move_down,
+            self.move_left
+        ]
         self.reset()
 
     # Counts how many empty tiles are there
@@ -45,19 +51,18 @@ class Game:
     # tempalte for making moves easier
     def move_template(self, static_dim, dynamic_dim, starting, increment):
         moved = False
+        score_increase = 0
         for i in static_dim:
-            print(i)
             free = starting
             last_val = self.board[i][free]
-            print(dynamic_dim)
             for j in dynamic_dim:
-                print(i, j)
                 if self.board[i][j] != 0:
                     if self.board[i][j] == last_val or last_val == 0:
                         moved = True
                         self.board[i][free] += self.board[i][j]
                         self.board[i][j] = 0
                         if last_val != 0:
+                            score_increase += self.board[i][free]
                             free += increment
                     else:
                         free += increment
@@ -66,7 +71,8 @@ class Game:
                             self.board[i][free] = self.board[i][j]
                             self.board[i][j] = 0
                     last_val = self.board[i][free]
-        return moved
+        self.score += score_increase
+        return moved, score_increase
 
     def move_left(self):
         return self.move_template(range(self.height), range(1, self.width), 0, 1)
@@ -85,3 +91,22 @@ class Game:
         tmp = self.move_right()
         self.board = self.board.T
         return tmp
+
+    def step(self, action):
+        return self.steps[action]()
+
+    def state(self):
+        return [self.board.copy().ravel()]
+
+    def is_game_over(self):
+        vertical, horizontal = range(self.height), range(self.width)
+        for i in vertical:
+            for j in horizontal:
+                tile = self.board[i][j]
+                if tile == 0:
+                    return False
+                if i != 0 and tile == self.board[i - 1][j]:
+                    return False
+                if j != 0 and tile == self.board[i][j - 1]:
+                    return False
+        return True

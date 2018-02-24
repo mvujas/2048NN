@@ -1,5 +1,7 @@
 from game import Game
 import os
+import random
+import time
 
 def show(game):
     os.system("clear")
@@ -19,35 +21,44 @@ CODE_OK = 2
 CODE_UNAVALIABLE_MOVEMENT = 3
 
 def play_turn(game, inpt):
-    code = CODE_INVALID_INPUT
+    action = None
     if inpt == '\x1b':
-        code = CODE_EXIT
+        return CODE_EXIT
     elif inpt == '\x1b[D':
-        code = CODE_OK if game.move_left() else CODE_UNAVALIABLE_MOVEMENT
+        action = 3
     elif inpt == '\x1b[C':
-        code = CODE_OK if game.move_right() else CODE_UNAVALIABLE_MOVEMENT
+        action = 1
     elif inpt == '\x1b[A':
-        code = CODE_OK if game.move_up() else CODE_UNAVALIABLE_MOVEMENT
+        action = 0
     elif inpt == '\x1b[B':
-        code = CODE_OK if game.move_down() else CODE_UNAVALIABLE_MOVEMENT
-    return code
+        action = 2
+    else:
+        return CODE_INVALID_INPUT
+    successfulness, score_increase = game.step(action)
+    print(score_increase)
+    return CODE_OK if successfulness else CODE_UNAVALIABLE_MOVEMENT
 
+if __name__ == "__main__":
+    game = Game()
+    code = CODE_OK
 
-game = Game()
-code = CODE_OK
+    while not game.is_game_over() and code != CODE_EXIT:
+        if code == CODE_OK:
+            game.random_spawn()
 
-while True and code != CODE_EXIT:
-    if code == CODE_OK:
-        game.random_spawn()
+        show(game)
+        print(game.is_game_over())
+        print('Score: %d' % game.score)
+        '''
+        if code == CODE_INVALID_INPUT:
+            print('Nevalidan potez!')
+        if code == CODE_UNAVALIABLE_MOVEMENT:
+            print('Nijedno polje se ne moze pomeriti!')
 
-    show(game)
+        print("Unesi sledeci pravac: ")
+        code = play_turn(game, input())
+        '''
+        game.step(random.randint(0, 3))
+        time.sleep(0.1)
 
-    if code == CODE_INVALID_INPUT:
-        print('Nevalidan potez!')
-    if code == CODE_UNAVALIABLE_MOVEMENT:
-        print('Nijedno polje se ne moze pomeriti!')
-
-    print("Unesi sledeci pravac: ")
-    code = play_turn(game, input())
-
-print('Izazak iz igre...')
+    print('Izazak iz igre...')
