@@ -1,6 +1,7 @@
 from neural_network import NeuralNetwork
 from game import Game
 from cmd_gui import show
+from timeit import default_timer as timer
 import random
 import time
 
@@ -18,26 +19,36 @@ class QAgent:
             action = None
             initial_q_values = None
             reward = None
+            iteration = 1
             while not self.game.is_game_over():
+
                 if moved:
                     self.game.random_spawn()
                 initial_state = self.game.state()
 
+                #start_time = timer()
+                #show(self.game)
                 if random.random() < epsilon:
                     initial_q_values = self.net.sess.run(self.net.output_layer, feed_dict={
                         self.net.input_layer: initial_state
                     })
                     action = random.randint(0, 3)
                 else:
-                    action, initial_q_values = self.net.sess.run([self.net.prediction[0], self.net.output_layer], feed_dict={
+                    action, initial_q_values = self.net.sess.run([self.net.prediction, self.net.output_layer], feed_dict={
                         self.net.input_layer: initial_state
                     })
+                    action = action[0]
+
+                #iter_time = timer() - start_time
+                #print('Iteration',iteration,', iteration time', iter_time)
+                #iteration += 1
+
                 moved, score_increase = self.game.step(action)
                 done = self.game.is_game_over()
                 if done:
-                    reward = -500
+                    reward = -10000
                 elif not moved:
-                    reward = -10
+                    reward = -1000
                 else:
                     new_state = self.game.state()
                     new_q_max = self.net.sess.run(self.net.output_layer, feed_dict={
@@ -52,6 +63,7 @@ class QAgent:
                     self.net.input_layer: initial_state,
                     self.net.next_values: initial_q_values
                 })
+
 
 
 
@@ -73,13 +85,16 @@ class QAgent:
             else:
                 action = random.randint(0, 3)
             moved, _ = self.game.step(action)
-            time.sleep(0.1)
 
-q = QAgent()
-q.play_a_game(False)
-first_score = q.game.score
-q.train(5)
-q.play_a_game(False)
-second_score = q.game.score
-print('Score 1:', first_score)
-print('Score 2:', second_score)
+if __name__ == "__main__":
+	start_time = timer()
+	q = QAgent()
+	q.play_a_game(False)
+	time_passed = timer() - start_time
+	print('Time required:', time_passed)
+	first_score = q.game.score
+	q.train(5)
+	q.play_a_game(False)
+	second_score = q.game.score
+	print('Score 1:', first_score)
+	print('Score 2:', second_score)
