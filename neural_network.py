@@ -2,7 +2,7 @@ import tensorflow as tf
 import numpy as np
 
 class NeuralNetwork:
-    def __init__(self, activation_function=tf.tanh, hidden_layers_config=np.array([100, 500, 250, 300]), learning_rate=0.01):
+    def __init__(self, activation_function=tf.nn.relu, hidden_layers_config=np.array([256, 2400, 1600, 800, 400, 400, 200, 200, 100, 100]), learning_rate=0.1):
         with tf.device('cpu:0'):
             self.input_layer = tf.placeholder(tf.float32, shape=[1, 16])
 
@@ -16,7 +16,7 @@ class NeuralNetwork:
 
             for i in range(hidden_layers_config.size):
                 print(hidden_layers_config[i])
-                self.weights.append(tf.Variable(tf.random_uniform([last_layer_size, hidden_layers_config[i]], -1, 1)))
+                self.weights.append(tf.Variable(tf.zeros([last_layer_size, hidden_layers_config[i]])))
                 self.biases.append(tf.Variable(tf.zeros([hidden_layers_config[i]])))
                 self.hidden_layers.append(activation_function(tf.matmul(last_layer, self.weights[i]) + self.biases[i]))
                 last_layer = self.hidden_layers[i]
@@ -24,7 +24,7 @@ class NeuralNetwork:
 
             self.weights.append(tf.Variable(tf.random_uniform([last_layer_size, 4], -1, 1)))
             self.biases.append(tf.Variable(tf.zeros([4])))
-            self.output_layer = activation_function(tf.matmul(last_layer, self.weights[hidden_layers_config.size]) + self.biases[hidden_layers_config.size])
+            self.output_layer = tf.matmul(last_layer, self.weights[hidden_layers_config.size]) + self.biases[hidden_layers_config.size]
 
             self.prediction = tf.argmax(self.output_layer, 1)
 
