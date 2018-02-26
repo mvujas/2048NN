@@ -84,8 +84,9 @@ class QAgent:
         print("2048:",len(list(filter(lambda x: x == 2048, max_tiles))))
         print("4096:",len(list(filter(lambda x: x == 4096, max_tiles))))
         print(max_tiles)
-        plt.plot(scores)
-        plt.show()
+        if plot_scores:
+            plt.plot(scores)
+            plt.show()
 
     def play_a_game(self, graphics=True):
         self.game.reset()
