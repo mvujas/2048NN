@@ -15,13 +15,13 @@ class QAgent:
         self.game = Game()
         self.net = NeuralNetwork()
 
-    def train(self, games, discount_factor=0.8, saving_step=100, plot_scores=False):
+    def train(self, games, discount_factor=0.8, saving_step=100, plot_scores=False, additional_folder_text=''):
         max_tiles = []
         scores = []
         start_date = datetime.datetime.now()
         saver = tf.train.Saver()
         if games >= saving_step:
-            saving_folder = 'models/model-%d.%d.%d.-%d:%d:%d' % (start_date.day, start_date.month, start_date.year, start_date.hour, start_date.minute, start_date.second)
+            saving_folder = 'models/model-%d.%d.%d.-%d:%d:%d%s' % (start_date.day, start_date.month, start_date.year, start_date.hour, start_date.minute, start_date.second, additional_folder_text)
             os.system('mkdir %s' % saving_folder)
         for i in range(games):
             print('Game', i)
@@ -58,15 +58,15 @@ class QAgent:
                 moved, score_increase = self.game.step(action)
                 done = self.game.is_game_over()
                 if done:
-                    reward = -100
+                    reward = 0
                 elif not moved:
-                    reward = -50
+                    reward = -10
                 else:
                     new_state = self.game.state()
                     new_q_max = self.net.sess.run(self.net.output_layer, feed_dict={
                         self.net.input_layer: new_state
                     }).max()
-                    reward = score_increase + discount_factor * new_q_max - initial_q_values[0][action]
+                    reward = score_increase + discount_factor * new_q_max
 
                 initial_q_values[0][action] = reward
 
@@ -113,15 +113,11 @@ class QAgent:
         print(invalid)
 
 if __name__ == "__main__":
-    start_time = timer()
     q = QAgent()
     q.play_a_game(False)
-    time_passed = timer() - start_time
-    print('Time required:', time_passed)
     first_score = q.game.score
-    q.train(5)
+    q.train(1000, plot_scores=True)
     q.play_a_game(True)
     second_score = q.game.score
     print('Score 1:', first_score)
     print('Score 2:', second_score)
-    saver = tf.train.Saver()
