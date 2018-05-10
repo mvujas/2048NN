@@ -8,11 +8,13 @@ def initial_state():
 
 def is_game_over(state):
 	height, width = state.shape
-	height -= 1
-	width -= 1
 	for i in range(height):
 		for j in range(width):
-			if not state[i][j] or state[i][j] == state[i + 1][j] or state[i][j] == state[i][j + 1]:
+			if not state[i][j]:
+				return False
+			if i != width - 1 and state[i][j] == state[i + 1][j]:
+				return False
+			if j != height - 1 and state[i][j] == state[i][j + 1]:
 				return False
 	return True
 
@@ -20,6 +22,7 @@ def is_game_over(state):
 def move_left(state, copy=False):
 	result = state.copy() if copy else state
 	height, width = state.shape
+	moved = False
 	for i in range(height):
 		setter_index = -1
 		last_found = 0
@@ -28,21 +31,24 @@ def move_left(state, copy=False):
 				if last_found == result[i][mover_index]:
 					result[i][setter_index] *= 2
 					last_found = 0
+					moved = True
 				else:
 					setter_index += 1
 					result[i][setter_index] = result[i][mover_index]
 					last_found = result[i][setter_index]
+					moved = moved or setter_index != mover_index
 
 		setter_index += 1
 
 		while setter_index < width:
 			result[i][setter_index] = 0
 			setter_index += 1
-	return result
+	return result, moved
 
 def move_right(state, copy=False):
 	result = state.copy() if copy else state
 	height, width = state.shape
+	moved = False
 	for i in range(height):
 		setter_index = width
 		last_found = 0
@@ -51,21 +57,24 @@ def move_right(state, copy=False):
 				if last_found == result[i][mover_index]:
 					result[i][setter_index] *= 2
 					last_found = 0
+					moved = True
 				else:
 					setter_index -= 1
 					result[i][setter_index] = result[i][mover_index]
 					last_found = result[i][setter_index]
+					moved = moved or setter_index != mover_index
 
 		setter_index -= 1
 
 		while setter_index >= 0:
 			result[i][setter_index] = 0
 			setter_index -= 1
-	return result
+	return result, moved
 
 def move_up(state, copy=False):
 	result = state.copy() if copy else state
 	height, width = state.shape
+	moved = False
 	for j in range(width):
 		setter_index = -1
 		last_found = 0
@@ -74,21 +83,24 @@ def move_up(state, copy=False):
 				if last_found == result[mover_index][j]:
 					result[setter_index][j] *= 2
 					last_found = 0
+					moved = True
 				else:
 					setter_index += 1
 					result[setter_index][j] = result[mover_index][j]
 					last_found = result[setter_index][j]
+					moved = moved or setter_index != mover_index
 
 		setter_index += 1
 
 		while setter_index < height:
 			result[setter_index][j] = 0
 			setter_index += 1
-	return result
+	return result, moved
 
 def move_down(state, copy=False):
 	result = state.copy() if copy else state
 	height, width = state.shape
+	moved = False
 	for j in range(width):
 		setter_index = height
 		last_found = 0
@@ -97,17 +109,19 @@ def move_down(state, copy=False):
 				if last_found == result[mover_index][j]:
 					result[setter_index][j] *= 2
 					last_found = 0
+					moved = True
 				else:
 					setter_index -= 1
 					result[setter_index][j] = result[mover_index][j]
 					last_found = result[setter_index][j]
+					moved = moved or setter_index != mover_index
 
 		setter_index -= 1
 
 		while setter_index >= 0:
 			result[setter_index][j] = 0
 			setter_index -= 1
-	return result
+	return result, moved
 
 def count_free_tiles(state):
 	return np.count_nonzero(state == 0)
@@ -137,12 +151,18 @@ enumerated_action_list = [move_up, move_right, move_down, move_left]
 def action(state, action_num, copy=False):
 	return enumerated_action_list[action_num](state, copy)
 
-#game = initial_state()
-#game1 = game
-game = np.array([
-		[0,		2,		0,		2],
-		[2,		2,		4,		8],
-		[0,		16,		0,		4],
-		[32,	128,	128,	4]
-	])
-print(action(game, 0))
+
+import time
+
+state = initial_state()
+moved = True
+while not is_game_over(state):
+	if moved:
+		state = do_a_random_spawn(state)
+	print(state)
+	print(15*'\n')
+	time.sleep(0.3)
+	step = random.randrange(0, 4)
+	state, moved = action(state, step)
+print(state)
+print(is_game_over(state))
