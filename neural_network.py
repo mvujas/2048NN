@@ -15,89 +15,51 @@ class NeuralNetwork:
         conv_1 = tf.layers.conv2d(
             inputs=self.input,
             filters=1000,
-            kernel_size=4,
+            kernel_size=[4, 1],
             padding=padding,
-            activation=activation_function,
-            name='conv_1'
+            activation=activation_function
         )
 
         conv_2 = tf.layers.conv2d(
             inputs=conv_1,
             filters=1000,
-            kernel_size=4,
+            kernel_size=[1, 4],
             padding=padding,
-            activation=activation_function,
-            name='conv_2'
+            activation=activation_function
         )
-
 
         conv_3 = tf.layers.conv2d(
             inputs=conv_2,
             filters=1000,
-            kernel_size=4,
+            kernel_size=[4, 1],
             padding=padding,
-            activation=activation_function,
-            name='conv_3'
+            activation=activation_function
         )
 
         conv_4 = tf.layers.conv2d(
             inputs=conv_3,
             filters=1000,
-            kernel_size=4,
+            kernel_size=[1, 4],
             padding=padding,
-            activation=activation_function,
-            name='conv_4'
+            activation=activation_function
         )
 
-        conv_5 = tf.layers.conv2d(
-            inputs=conv_4,
-            filters=1000,
-            kernel_size=4,
-            padding=padding,
-            activation=activation_function,
-            name='conv_5'
-        )
+        conv_4_flat = tf.layers.flatten(conv_4)
 
-        conv_6 = tf.layers.conv2d(
-            inputs=conv_5,
-            filters=1000,
-            kernel_size=4,
-            padding=padding,
-            activation=activation_function,
-            name='conv_6'
-        )
-
-        conv_6_flat = tf.layers.flatten(conv_6, name='conv_6_flat')
-
-        fc_1 = tf.layers.dense(conv_6_flat, units=256, activation=activation_function, name='fc_1')
-        self.output = tf.layers.dense(fc_1, units=4, name='output')
+        fc_1 = tf.layers.dense(conv_4_flat, units=512, activation=activation_function)
+        self.output = tf.layers.dense(fc_1, units=4)
 
         self.max = tf.reduce_max(self.output, axis=1)
 
-        self.prediction = tf.argmax(self.output, 1, name='prediction')
+        self.prediction = tf.argmax(self.output, 1)
 
-        self.nextQ = tf.placeholder(tf.float32, shape=(None, 4), name='nextQ')
+        self.nextQ = tf.placeholder(tf.float32, shape=(None, 4))
 
-        self.loss = tf.reduce_sum(tf.square(self.output - self.nextQ), name='loss')
+        self.loss = tf.reduce_sum(tf.square(self.output - self.nextQ))
 
-        optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
+        optimizer = tf.train.GradientDescentOptimizer(learning_rate=learning_rate)
         self.train_layer = optimizer.minimize(self.loss)
-
-        tf.add_to_collection('vars', self.input)
-        tf.add_to_collection('vars', conv_1)
-        tf.add_to_collection('vars', conv_2)
-        tf.add_to_collection('vars', conv_3)
-        tf.add_to_collection('vars', conv_4)
-        tf.add_to_collection('vars', conv_5)
-        tf.add_to_collection('vars', conv_6)
-        tf.add_to_collection('vars', conv_6_flat)
-        tf.add_to_collection('vars', fc_1)
-        tf.add_to_collection('vars', self.output)
-        tf.add_to_collection('vars', self.prediction)
-        tf.add_to_collection('vars', self.nextQ)
-        tf.add_to_collection('vars', self.loss)
-        self.saver = tf.train.Saver()
-
+        self.sess = None
 
         self.config = tf.ConfigProto(
             device_count = {'GPU': 0}
@@ -130,11 +92,6 @@ class NeuralNetwork:
             self.input: state,
             self.nextQ: nextQ
         })
-
-    def save_model(self, path):
-        if not self.sess:
-            raise Exception('Session is not initalized!')
-        self.saver.save(self.sess, path)
 
 log_array = {(2 ** i if i else 0): i for i in range(MAX_EXP)}
 def prepare_input(input_state):

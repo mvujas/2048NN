@@ -15,7 +15,7 @@ class NeuralNetwork:
         conv_1 = tf.layers.conv2d(
             inputs=self.input,
             filters=1000,
-            kernel_size=4,
+            kernel_size=[4, 1],
             padding=padding,
             activation=activation_function
         )
@@ -23,16 +23,15 @@ class NeuralNetwork:
         conv_2 = tf.layers.conv2d(
             inputs=conv_1,
             filters=1000,
-            kernel_size=4,
+            kernel_size=[1, 4],
             padding=padding,
             activation=activation_function
         )
 
-
         conv_3 = tf.layers.conv2d(
             inputs=conv_2,
             filters=1000,
-            kernel_size=4,
+            kernel_size=[4, 1],
             padding=padding,
             activation=activation_function
         )
@@ -40,30 +39,14 @@ class NeuralNetwork:
         conv_4 = tf.layers.conv2d(
             inputs=conv_3,
             filters=1000,
-            kernel_size=4,
+            kernel_size=[1, 4],
             padding=padding,
             activation=activation_function
         )
 
-        conv_5 = tf.layers.conv2d(
-            inputs=conv_4,
-            filters=1000,
-            kernel_size=4,
-            padding=padding,
-            activation=activation_function
-        )
+        conv_4_flat = tf.layers.flatten(conv_4)
 
-        conv_6 = tf.layers.conv2d(
-            inputs=conv_5,
-            filters=1000,
-            kernel_size=4,
-            padding=padding,
-            activation=activation_function
-        )
-
-        conv_6_flat = tf.layers.flatten(conv_6)
-
-        fc_1 = tf.layers.dense(conv_6_flat, units=256, activation=activation_function)
+        fc_1 = tf.layers.dense(conv_4_flat, units=512, activation=activation_function)
         self.output = tf.layers.dense(fc_1, units=4)
 
         self.max = tf.reduce_max(self.output, axis=1)
@@ -74,7 +57,7 @@ class NeuralNetwork:
 
         self.loss = tf.reduce_sum(tf.square(self.output - self.nextQ))
 
-        optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
+        optimizer = tf.train.GradientDescentOptimizer(learning_rate=learning_rate)
         self.train_layer = optimizer.minimize(self.loss)
         self.sess = None
 
