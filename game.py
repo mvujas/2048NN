@@ -1,112 +1,178 @@
 import numpy as np
 import random
 
-board_size = (4, 4)
-initial_value = 2
+board_shape = [4, 4]
+number_of_actions = 4
 
-class Game:
-    def __init__(self):
-        self.board = None
-        self.height = None
-        self.width = None
-        self.score = 0
-        self.steps = [
-            self.move_up,
-            self.move_right,
-            self.move_down,
-            self.move_left
-        ]
-        self.reset()
+def initial_state():
+	return np.zeros(board_shape)
 
-    # Counts how many empty tiles are there
-    def count_empty_fields(self):
-        return np.count_nonzero(self.board == 0)
+def get_possible_spawns(state):
+	height, width = state.shape
+	result = []
+	for i in range(height):
+		for j in range(width):
+			if state[i][j] == 0:
+				new_spawn_1 = state.copy()
+				new_spawn_2 = state.copy()
+				new_spawn_1[i][j] = 2
+				new_spawn_2[i][j] = 4
+				result.append(new_spawn_1)
+				result.append(new_spawn_2)
+	return result
 
-    # Picks one of empty tiles
-    def random_spawn(self):
-        empty_tiles = self.count_empty_fields()
-        if empty_tiles == 0:
-            return False
-        return self.spawn_random_tile(random.randint(1, empty_tiles))
+def is_game_over(state):
+	height, width = state.shape
+	for i in range(height):
+		for j in range(width):
+			if not state[i][j]:
+				return False
+			if i != width - 1 and state[i][j] == state[i + 1][j]:
+				return False
+			if j != height - 1 and state[i][j] == state[i][j + 1]:
+				return False
+	return True
 
-    # Sets choosen tile to have value of initial_value
-    def spawn_random_tile(self, n_th):
-        k = 0
-        vertical, horizontal = range(self.height), range(self.width)
-        for i in vertical:
-            for j in horizontal:
-                if self.board[i][j] == 0:
-                    k += 1
-                    if k == n_th:
-                        self.board[i][j] = initial_value
-                        return True
-        return False
+# Repeating code, but everything for speed
+def move_left(state, copy=False):
+	result = state.copy() if copy else state
+	height, width = state.shape
+	moved = False
+	reward = 0
+	for i in range(height):
+		setter_index = -1
+		last_found = 0
+		for mover_index in range(width):
+			if result[i][mover_index]:
+				if last_found == result[i][mover_index]:
+					result[i][setter_index] *= 2
+					reward += result[i][setter_index]
+					last_found = 0
+					moved = True
+				else:
+					setter_index += 1
+					result[i][setter_index] = result[i][mover_index]
+					last_found = result[i][setter_index]
+					moved = moved or setter_index != mover_index
 
-    # reset score adn board to initial state
-    def reset(self):
-        self.board = np.zeros(board_size, dtype=int)
-        self.score = 0
-        self.height, self.width = self.board.shape
+		setter_index += 1
 
-    # tempalte for making moves easier
-    def move_template(self, static_dim, dynamic_dim, starting, increment):
-        moved = False
-        score_increase = 0
-        for i in static_dim:
-            free = starting
-            last_val = self.board[i][free]
-            for j in dynamic_dim:
-                if self.board[i][j] != 0:
-                    if self.board[i][j] == last_val or last_val == 0:
-                        moved = True
-                        self.board[i][free] += self.board[i][j]
-                        self.board[i][j] = 0
-                        if last_val != 0:
-                            score_increase += self.board[i][free]
-                            free += increment
-                    else:
-                        free += increment
-                        if j != free:
-                            moved = True
-                            self.board[i][free] = self.board[i][j]
-                            self.board[i][j] = 0
-                    last_val = self.board[i][free]
-        self.score += score_increase
-        return moved, score_increase
+		while setter_index < width:
+			result[i][setter_index] = 0
+			setter_index += 1
+	return result, moved, reward
 
-    def move_left(self):
-        return self.move_template(range(self.height), range(1, self.width), 0, 1)
+def move_right(state, copy=False):
+	result = state.copy() if copy else state
+	height, width = state.shape
+	moved = False
+	reward = 0
+	for i in range(height):
+		setter_index = width
+		last_found = 0
+		for mover_index in reversed(range(width)):
+			if result[i][mover_index]:
+				if last_found == result[i][mover_index]:
+					result[i][setter_index] *= 2
+					reward += result[i][setter_index]
+					last_found = 0
+					moved = True
+				else:
+					setter_index -= 1
+					result[i][setter_index] = result[i][mover_index]
+					last_found = result[i][setter_index]
+					moved = moved or setter_index != mover_index
 
-    def move_right(self):
-        return self.move_template(range(self.height), range(self.width - 2, -1, -1), self.width - 1, -1)
+		setter_index -= 1
 
-    def move_up(self):
-        self.board = self.board.T
-        tmp = self.move_left()
-        self.board = self.board.T
-        return tmp
+		while setter_index >= 0:
+			result[i][setter_index] = 0
+			setter_index -= 1
+	return result, moved, reward
 
-    def move_down(self):
-        self.board = self.board.T
-        tmp = self.move_right()
-        self.board = self.board.T
-        return tmp
+def move_up(state, copy=False):
+	result = state.copy() if copy else state
+	height, width = state.shape
+	moved = False
+	reward = 0
+	for j in range(width):
+		setter_index = -1
+		last_found = 0
+		for mover_index in range(height):
+			if result[mover_index][j]:
+				if last_found == result[mover_index][j]:
+					result[setter_index][j] *= 2
+					reward += result[setter_index][j]
+					last_found = 0
+					moved = True
+				else:
+					setter_index += 1
+					result[setter_index][j] = result[mover_index][j]
+					last_found = result[setter_index][j]
+					moved = moved or setter_index != mover_index
 
-    def step(self, action):
-        return self.steps[action]()
+		setter_index += 1
 
-    def state(self):
-        return [self.board.copy().ravel()]
+		while setter_index < height:
+			result[setter_index][j] = 0
+			setter_index += 1
+	return result, moved, reward
 
-    def is_game_over(self):
-        vertical, horizontal = range(self.height), range(self.width)
-        for i in vertical:
-            for j in horizontal:
-                tile = self.board[i][j]
-                if tile == 0:
-                    return False
-                if i != 0 and tile == self.board[i - 1][j]:
-                    return False
-                if j != 0 and tile == self.board[i][j - 1]:
-                    return False
-        return True
+def move_down(state, copy=False):
+	result = state.copy() if copy else state
+	height, width = state.shape
+	moved = False
+	reward = 0
+	for j in range(width):
+		setter_index = height
+		last_found = 0
+		for mover_index in reversed(range(height)):
+			if result[mover_index][j]:
+				if last_found == result[mover_index][j]:
+					result[setter_index][j] *= 2
+					reward += result[setter_index][j]
+					last_found = 0
+					moved = True
+				else:
+					setter_index -= 1
+					result[setter_index][j] = result[mover_index][j]
+					last_found = result[setter_index][j]
+					moved = moved or setter_index != mover_index
+
+		setter_index -= 1
+
+		while setter_index >= 0:
+			result[setter_index][j] = 0
+			setter_index -= 1
+	return result, moved, reward
+
+def count_free_tiles(state):
+	return np.count_nonzero(state == 0)
+
+def do_a_random_spawn(state):
+	value = 2 if random.random() < 0.9 else 4
+	tile_num = random.randrange(0, count_free_tiles(state))
+	height, width = state.shape
+	k = 0
+	for i in range(height):
+		for j in range(width):
+			if not state[i][j]:
+				if tile_num == k:
+					state[i][j] = value
+					return state
+				else:
+					k += 1
+	return None
+
+'''
+	0 - up
+	1 - right
+	2 - down
+	3 - left
+'''
+enumerated_action_list = [move_up, move_right, move_down, move_left]
+def action(state, action_num, copy=False):
+	return enumerated_action_list[action_num](state, copy)
+
+def get_possible_states(state, copy=True):
+	return [i(state, copy) for i in enumerated_action_list]
